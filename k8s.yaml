@@ -1,0 +1,314 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  creationTimestamp: null
+  name: todo
+  namespace: todo
+spec: {}
+status: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    kompose.cmd: C:\tools\kompose.exe convert -f .\docker-compose.yml -f .\docker-compose.override.yml --out .\k8s.yaml -n todo
+    kompose.version: 1.31.2 (a92241f79)
+  creationTimestamp: null
+  labels:
+    io.kompose.service: sqlserverdb
+  name: sqlserverdb
+  namespace: todo
+spec:
+  ports:
+    - name: "1433"
+      port: 1433
+      targetPort: 1433
+  selector:
+    io.kompose.service: sqlserverdb
+status:
+  loadBalancer: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    kompose.cmd: C:\tools\kompose.exe convert -f .\docker-compose.yml -f .\docker-compose.override.yml --out .\k8s.yaml -n todo
+    kompose.version: 1.31.2 (a92241f79)
+  creationTimestamp: null
+  labels:
+    io.kompose.service: todoangulargraphql-client
+  name: todoangulargraphql-client
+  namespace: todo
+spec:
+  type: LoadBalancer 
+  ports:
+    - name: "4200"
+      port: 4200
+      targetPort: 4200
+  selector:
+    io.kompose.service: todoangulargraphql-client
+status:
+  loadBalancer: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    kompose.cmd: C:\tools\kompose.exe convert -f .\docker-compose.yml -f .\docker-compose.override.yml --out .\k8s.yaml -n todo
+    kompose.version: 1.31.2 (a92241f79)
+  creationTimestamp: null
+  labels:
+    io.kompose.service: todoangulargraphql-server
+  name: todoangulargraphql-server
+  namespace: todo
+spec:
+  type: LoadBalancer 
+  ports:
+    - name: "8080"
+      port: 8080
+      targetPort: 8080
+  selector:
+    io.kompose.service: todoangulargraphql-server
+status:
+  loadBalancer: {}
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: C:\tools\kompose.exe convert -f .\docker-compose.yml -f .\docker-compose.override.yml --out .\k8s.yaml -n todo
+    kompose.version: 1.31.2 (a92241f79)
+  creationTimestamp: null
+  labels:
+    io.kompose.service: sqlserverdb
+  name: sqlserverdb
+  namespace: todo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: sqlserverdb
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: C:\tools\kompose.exe convert -f .\docker-compose.yml -f .\docker-compose.override.yml --out .\k8s.yaml -n todo
+        kompose.version: 1.31.2 (a92241f79)
+      creationTimestamp: null
+      labels:
+        io.kompose.network/todoangulargraphql-default: "true"
+        io.kompose.service: sqlserverdb
+    spec:
+      containers:
+        - env:
+            - name: ACCEPT_EULA
+              value: "Y"
+            - name: SA_PASSWORD
+              value: My!P@ssw0rd1
+          image: mcr.microsoft.com/azure-sql-edge:latest
+          # livenessProbe:
+          #   exec:
+          #     command:
+          #       - /opt/mssql-tools/bin/sqlcmd -S sqlserverdb -U sa -P "My!P@ssw0rd1" -Q "SELECT 1" -b -o /dev/null
+          #   failureThreshold: 10
+          #   initialDelaySeconds: 10
+          #   periodSeconds: 10
+          #   timeoutSeconds: 3
+          name: sqlserverdb
+          ports:
+            - containerPort: 1433
+              hostPort: 1433
+              protocol: TCP
+          resources: {}
+          volumeMounts:
+            - mountPath: /var/opt/mssql
+              name: todo-db
+      restartPolicy: Always
+      volumes:
+        - name: todo-db
+          persistentVolumeClaim:
+            claimName: todo-db
+status: {}
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  creationTimestamp: null
+  labels:
+    io.kompose.service: todo-db
+  name: todo-db
+  namespace: todo
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
+status: {}
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: C:\tools\kompose.exe convert -f .\docker-compose.yml -f .\docker-compose.override.yml --out .\k8s.yaml -n todo
+    kompose.version: 1.31.2 (a92241f79)
+  creationTimestamp: null
+  labels:
+    io.kompose.service: todoangulargraphql-client
+  name: todoangulargraphql-client
+  namespace: todo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: todoangulargraphql-client
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: C:\tools\kompose.exe convert -f .\docker-compose.yml -f .\docker-compose.override.yml --out .\k8s.yaml -n todo
+        kompose.version: 1.31.2 (a92241f79)
+      creationTimestamp: null
+      labels:
+        io.kompose.network/todoangulargraphql-default: "true"
+        io.kompose.service: todoangulargraphql-client
+    spec:
+      containers:
+        - image: todoangulargraphqlclient:latest
+          name: todoangulargraphql-client
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 4200
+              hostPort: 4200
+              protocol: TCP
+          resources: {}
+          # volumeMounts:
+          #   - mountPath: /app
+          #     name: todoangulargraphql-client-claim0
+          #   - mountPath: /app/node_modules
+          #     name: node-modules
+      restartPolicy: Always
+      # volumes:
+      #   - name: todoangulargraphql-client-claim0
+      #     persistentVolumeClaim:
+      #       claimName: todoangulargraphql-client-claim0
+      #   - name: node-modules
+      #     persistentVolumeClaim:
+      #       claimName: node-modules
+status: {}
+
+# ---
+# apiVersion: v1
+# kind: PersistentVolumeClaim
+# metadata:
+#   creationTimestamp: null
+#   labels:
+#     io.kompose.service: todoangulargraphql-client-claim0
+#   name: todoangulargraphql-client-claim0
+#   namespace: todo
+# spec:
+#   accessModes:
+#     - ReadWriteOnce
+#   resources:
+#     requests:
+#       storage: 100Mi
+# status: {}
+
+# ---
+# apiVersion: v1
+# kind: PersistentVolumeClaim
+# metadata:
+#   creationTimestamp: null
+#   labels:
+#     io.kompose.service: node-modules
+#   name: node-modules
+#   namespace: todo
+# spec:
+#   accessModes:
+#     - ReadWriteOnce
+#   resources:
+#     requests:
+#       storage: 100Mi
+# status: {}
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: C:\tools\kompose.exe convert -f .\docker-compose.yml -f .\docker-compose.override.yml --out .\k8s.yaml -n todo
+    kompose.version: 1.31.2 (a92241f79)
+  creationTimestamp: null
+  labels:
+    io.kompose.service: todoangulargraphql-server
+  name: todoangulargraphql-server
+  namespace: todo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: todoangulargraphql-server
+  strategy: {}
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: C:\tools\kompose.exe convert -f .\docker-compose.yml -f .\docker-compose.override.yml --out .\k8s.yaml -n todo
+        kompose.version: 1.31.2 (a92241f79)
+      creationTimestamp: null
+      labels:
+        io.kompose.network/todoangulargraphql-default: "true"
+        io.kompose.service: todoangulargraphql-server
+    spec:
+      containers:
+        - env:
+            - name: ASPNETCORE_ENVIRONMENT
+              value: Development
+            - name: ASPNETCORE_HTTP_PORTS
+              value: "8080"
+            - name: 'ASPNETCORE_LOGGING__CONSOLE__DISABLECOLORS'
+              value: ' true'
+          image: todoangulargraphqlserver
+          name: todoangulargraphql-server
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8080
+              hostPort: 8080
+              protocol: TCP
+          resources: {}
+      restartPolicy: Always
+status: {}
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: todo-ingress
+  namespace: todo
+spec:
+  rules:
+    - host: mysite.local.gd #magic.127.0.0.1.nip.io
+      http:
+        paths:
+          - pathType: Prefix
+            path: /
+            backend:
+              service:
+                name: todoangulargraphql-server
+                port:
+                  number: 8080
+          # - pathType: Prefix
+          #   path: /
+          #   backend:
+          #     service:
+          #       name: todoangulargraphql-client
+          #       port:
+          #         number: 4200
+

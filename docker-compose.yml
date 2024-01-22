@@ -1,0 +1,46 @@
+version: '3.4'
+
+services:
+  todoangulargraphql.client:
+    image: todoangulargraphqlclient:latest
+    container_name: todoangulargraphql.client
+    build: 
+      context: ToDoAngularGraphQL.Client/.
+      dockerfile: Dockerfile
+    ports: 
+      - "4200:4200"
+    depends_on:
+      - "todoangulargraphql.server"
+  todoangulargraphql.server:
+    image: ${DOCKER_REGISTRY-}todoangulargraphqlserver
+    container_name: todoangulargraphql.server
+    build:
+      context: .
+      dockerfile: ToDoAngularGraphQL.Server/Dockerfile
+    depends_on:
+      sqlserverdb:
+        condition: service_healthy
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_HTTP_PORTS=8080
+    ports:
+      - "8080:8080"
+  sqlserverdb:
+    container_name: sqlserverdb
+    image: mcr.microsoft.com/azure-sql-edge:latest
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=My!P@ssw0rd1
+    restart: always
+    ports:
+      - "1433:1433"
+    volumes:
+      - todoDb:/var/opt/mssql
+    healthcheck:
+      interval: 10s
+      test: /opt/mssql-tools/bin/sqlcmd -S sqlserverdb -U sa -P "My!P@ssw0rd1" -Q "SELECT 1" -b -o /dev/null
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+volumes: 
+  todoDb:
