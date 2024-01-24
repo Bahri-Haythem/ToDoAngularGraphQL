@@ -23,15 +23,15 @@ To stop and remove containers:
 You can run the app on kubernetes. Yaml files were generated using the **kompose** conversion tool .I used **minikube** as my kubernetes local cluster. To start it type:
 ```minikube start```
 
-Then deploy the app with the command (*execute on project root*):
-```kubectl apply -f .\k8s.yaml```
-
 Load the local images in minikube (You must build the images with Docker beforehand)
 ```minikube image load todoangulargraphqlserver```
 ```minikube image load todoangulargraphqlclient```
 
-To verify:
+To verify (make sure images are loaded before next step):
 ```minikube image ls```
+
+Then deploy the app with the command (*execute on project root*):
+```kubectl apply -f .\k8s.yaml```
 
 Finally, you can create a route for services with *tunnel* and expose the frontend service: 
 ```minikube tunnel```
